@@ -1408,4 +1408,309 @@
             </p>
             ${o.customer.gps ? `<a href="${o.customer.gps}" target="_blank" class="inline-block text-blue-600 font-bold underline"><i class="fa-solid fa-map-pin"></i> Abrir mapa GPS del cliente</a>` : ""}
             <div class="pt-1 text-slate-700">
-              ${(o.items || []).map(i => `<span class="inline-block bg-white border border-slate-200 px-2 py-1 rounded mr-1 mb-1 font-medium">${i.qty}x <strong>${i.name}</strong>
+              ${(o.items || []).map(i => `<span class="inline-block bg-white border border-slate-200 px-2 py-1 rounded mr-1 mb-1 font-medium">${i.qty}x <strong>${i.name}</strong> <span class="text-orange-600">[${i.sauce || formatItemExtrasText(i)}]</span></span>`).join("")}
+            </div>
+            ${o.notes || o.cashNote ? `<p class="text-[11px] text-amber-900 bg-amber-50 px-2.5 py-1 rounded border border-amber-200"><strong>Nota/Vuelto:</strong> ${[o.cashNote, o.notes].filter(Boolean).join(" | ")}</p>` : ""}
+          </div>
+
+          <div class="flex flex-row md:flex-col justify-between items-end gap-2">
+            <span class="text-lg font-extrabold text-orange-600">$${Number(o.total).toFixed(2)}</span>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <select onchange="updateOrderStatus(${idx}, this.value)" class="text-xs border rounded-lg px-2 py-1.5 bg-white font-semibold">
+                ${["Pendiente", "En preparación", "En camino", "Entregado", "Cancelado"].map(s => `<option value="${s}" ${o.status === s ? "selected" : ""}>${s}</option>`).join("")}
+              </select>
+              <button onclick="openEditOrderModal(${idx})" class="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1.5 rounded-lg text-xs font-bold" title="Editar todos los datos del pedido">
+                <i class="fa-solid fa-pen"></i> Editar
+              </button>
+              <button onclick="deleteOrder(${idx})" class="bg-red-50 hover:bg-red-100 text-red-600 px-2.5 py-1.5 rounded-lg text-xs font-bold" title="Eliminar pedido">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    async function updateOrderStatus(idx, newStatus) {
+      orders[idx].status = newStatus;
+      localStorage.setItem("emp593_orders", JSON.stringify(orders));
+      renderAdminOrders();
+      await pushOrdersToCloud();
+    }
+
+    function openEditOrderModal(idx) {
+      const ord = orders[idx];
+      if (!ord) return;
+      document.getElementById("editOrderIndex").value = idx;
+      document.getElementById("editModalOrderId").textContent = ord.orderId;
+      document.getElementById("editOrdName").value = ord.customer?.name || "";
+      document.getElementById("editOrdPhone").value = ord.customer?.phone || "";
+      document.getElementById("editOrdAddress").value = ord.customer?.address || "";
+      document.getElementById("editOrdRef").value = ord.customer?.reference || "";
+      document.getElementById("editOrdStatus").value = ord.status || "Pendiente";
+      document.getElementById("editOrdPayment").value = ord.payment || "Efectivo";
+      document.getElementById("editOrdTotal").value = Number(ord.total || 0).toFixed(2);
+      document.getElementById("editOrdNotes").value = [ord.cashNote, ord.notes].filter(Boolean).join(" | ");
+
+      const itemsLines = (ord.items || []).map(i => `${i.qty}x ${i.name} (${i.sauce || formatItemExtrasText(i)})`).join("\n");
+      document.getElementById("editOrdItemsText").value = itemsLines;
+
+      const modal = document.getElementById("editOrderModal");
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+    }
+
+    function closeEditOrderModal() {
+      const modal = document.getElementById("editOrderModal");
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    }
+
+    async function saveEditedOrder(e) {
+      e.preventDefault();
+      const idx = parseInt(document.getElementById("editOrderIndex").value, 10);
+      if (isNaN(idx) || !orders[idx]) return;
+
+      orders[idx].customer.name = document.getElementById("editOrdName").value.trim();
+      orders[idx].customer.phone = document.getElementById("editOrdPhone").value.trim();
+      orders[idx].customer.address = document.getElementById("editOrdAddress").value.trim();
+      orders[idx].customer.reference = document.getElementById("editOrdRef").value.trim();
+      orders[idx].status = document.getElementById("editOrdStatus").value;
+      orders[idx].payment = document.getElementById("editOrdPayment").value;
+      orders[idx].total = parseFloat(document.getElementById("editOrdTotal").value) || 0;
+      orders[idx].notes = document.getElementById("editOrdNotes").value.trim();
+      orders[idx].cashNote = "";
+
+      const rawLines = document.getElementById("editOrdItemsText").value.split("\n").map(l => l.trim()).filter(Boolean);
+      orders[idx].items = rawLines.map(line => {
+        const match = line.match(/^(\d+)x\s+(.+?)(?:\s*\((.+)\))?$/i);
+        if (match) {
+          return { qty: parseInt(match[1], 10), name: match[2].trim(), sauce: match[3] || "Sin extras", price: 0 };
+        }
+        return { qty: 1, name: line, sauce: "", price: 0 };
+      });
+
+      localStorage.setItem("emp593_orders", JSON.stringify(orders));
+      closeEditOrderModal();
+      renderAdminOrders();
+      await pushOrdersToCloud();
+    }
+
+    async function deleteOrder(idx) {
+      if (!confirm(`¿Seguro que deseas eliminar el pedido ${orders[idx].orderId}?`)) return;
+      orders.splice(idx, 1);
+      localStorage.setItem("emp593_orders", JSON.stringify(orders));
+      renderAdminOrders();
+      await pushOrdersToCloud();
+    }
+
+    function renderAdminMenu() {
+      const container = document.getElementById("adminMenuTable");
+      container.innerHTML = products.map(p => {
+        const extrasCount = Array.isArray(p.extras) ? p.extras.length : 0;
+        return `
+        <div class="p-3.5 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div class="flex items-center gap-3">
+            <img src="${p.image}" class="w-12 h-12 rounded-lg object-cover bg-slate-100" />
+            <div>
+              <p class="font-bold text-slate-800 text-sm">${p.name}</p>
+              <p class="text-slate-500">${p.category} • Precio base: <strong class="text-orange-600">$${Number(p.price).toFixed(2)}</strong></p>
+              <p class="text-[11px] text-slate-500 mt-0.5">
+                <i class="fa-solid fa-circle-plus text-emerald-600 mr-1"></i>
+                <strong>${extrasCount} extras disponibles:</strong>
+                ${(p.extras || []).map(e => `${e.name} ($${Number(e.price).toFixed(2)})`).join(", ") || "Ninguno"}
+              </p>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 self-end sm:self-center">
+            <button onclick="editProduct('${p.id}')" class="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg font-bold">
+              <i class="fa-solid fa-pen mr-1"></i> Editar Plato y Extras
+            </button>
+            <button onclick="deleteProduct('${p.id}')" class="bg-red-50 text-red-600 hover:bg-red-100 px-2.5 py-1.5 rounded-lg font-bold">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        </div>
+      `}).join("");
+    }
+
+    function editProduct(id) {
+      const p = products.find(item => item.id === id);
+      if (!p) return;
+      document.getElementById("editProdId").value = p.id;
+      document.getElementById("newProdName").value = p.name;
+      document.getElementById("newProdCategory").value = p.category;
+      document.getElementById("newProdPrice").value = p.price;
+      document.getElementById("newProdImage").value = p.image;
+      document.getElementById("newProdDesc").value = p.desc;
+
+      currentFormExtras = Array.isArray(p.extras) ? p.extras.map(e => ({ ...e })) : [];
+      renderFormExtrasBadges();
+
+      document.getElementById("productFormTitle").innerHTML = `<i class="fa-solid fa-pen text-blue-600 mr-1"></i> Editando Plato y sus Extras: ${p.name}`;
+      document.getElementById("btnSaveProductSubmit").innerHTML = `<i class="fa-solid fa-check mr-1"></i> Actualizar Producto y Extras`;
+      document.getElementById("btnCancelEditProduct").classList.remove("hidden");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function resetProductForm() {
+      document.getElementById("editProdId").value = "";
+      document.getElementById("newProdName").value = "";
+      document.getElementById("newProdPrice").value = "";
+      document.getElementById("newProdImage").value = "";
+      document.getElementById("newProdDesc").value = "";
+      currentFormExtras = [...DEFAULT_EXTRAS_FOOD];
+      renderFormExtrasBadges();
+      document.getElementById("productFormTitle").innerHTML = `<i class="fa-solid fa-utensils text-orange-600 mr-1"></i> Crear Nuevo Producto con Extras y Adicionales`;
+      document.getElementById("btnSaveProductSubmit").innerHTML = `<i class="fa-solid fa-floppy-disk mr-1"></i> Guardar Producto con sus Extras en Base de Datos`;
+      document.getElementById("btnCancelEditProduct").classList.add("hidden");
+    }
+
+    function handleSaveProduct(e) {
+      e.preventDefault();
+      const editId = document.getElementById("editProdId").value;
+      const name = document.getElementById("newProdName").value.trim();
+      const category = document.getElementById("newProdCategory").value;
+      const price = parseFloat(document.getElementById("newProdPrice").value);
+      const image = document.getElementById("newProdImage").value.trim() || "https://images.unsplash.com/photo-1604908554025-aaa87c152c7b?auto=format&fit=crop&w=600&q=80";
+      const desc = document.getElementById("newProdDesc").value.trim();
+
+      if (editId) {
+        const idx = products.findIndex(p => p.id === editId);
+        if (idx !== -1) {
+          products[idx] = {
+            ...products[idx],
+            name,
+            category,
+            price,
+            image,
+            desc,
+            extras: [...currentFormExtras]
+          };
+        }
+      } else {
+        products.push({
+          id: "prod-" + Date.now(),
+          name,
+          category,
+          price,
+          image,
+          desc,
+          extras: [...currentFormExtras]
+        });
+      }
+
+      localStorage.setItem("emp593_products", JSON.stringify(products));
+      resetProductForm();
+      renderCategories();
+      renderProducts();
+      renderAdminMenu();
+      pushStoreDataToCloud();
+    }
+
+    function deleteProduct(id) {
+      if (!confirm("¿Eliminar este producto del menú?")) return;
+      products = products.filter(p => p.id !== id);
+      localStorage.setItem("emp593_products", JSON.stringify(products));
+      renderCategories();
+      renderProducts();
+      renderAdminMenu();
+      pushStoreDataToCloud();
+    }
+
+    // 11. GUARDADO DE DATOS BANCARIOS Y SINCRONIZACIÓN CON FIREBASE
+    async function saveStoreSettings() {
+      settings = {
+        storeName: document.getElementById("cfgStoreName").value.trim() || "Empanadas y Algo Más 593",
+        whatsapp: document.getElementById("cfgWhatsapp").value.trim() || "593989513973",
+        deliveryFee: parseFloat(document.getElementById("cfgDeliveryFee").value) || 0,
+        freeThreshold: parseFloat(document.getElementById("cfgFreeThreshold").value) || 12,
+        bankName: document.getElementById("cfgBankName").value.trim(),
+        accountType: document.getElementById("cfgAccountType").value,
+        accountNumber: document.getElementById("cfgAccountNumber").value.trim(),
+        accountHolder: document.getElementById("cfgAccountHolder").value.trim(),
+        accountId: document.getElementById("cfgAccountId").value.trim(),
+        accountEmail: document.getElementById("cfgAccountEmail").value.trim(),
+        deunaNote: document.getElementById("cfgDeunaNote").value.trim(),
+        firebaseUrl: document.getElementById("cfgFirebaseUrl").value.trim()
+      };
+      localStorage.setItem("emp593_settings", JSON.stringify(settings));
+      applySettingsToUI();
+      updateCartUI();
+      await pushStoreDataToCloud();
+      await syncFromCloudIfConfigured();
+      alert("Datos bancarios y configuración guardados correctamente.");
+    }
+
+    async function pushOrdersToCloud() {
+      if (!settings.firebaseUrl) return;
+      try {
+        const base = settings.firebaseUrl.replace(/\/$/, "");
+        await fetch(`${base}/ordersList.json`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(orders)
+        });
+      } catch (e) {
+        console.warn("No se pudo sincronizar pedidos con Firebase:", e);
+      }
+    }
+
+    async function pushStoreDataToCloud() {
+      if (!settings.firebaseUrl) return;
+      try {
+        const base = settings.firebaseUrl.replace(/\/$/, "");
+        await fetch(`${base}/storeConfig.json`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ settings, categories, products })
+        });
+      } catch (e) {
+        console.warn("No se pudo subir configuración a Firebase:", e);
+      }
+    }
+
+    async function syncFromCloudIfConfigured() {
+      if (!settings.firebaseUrl) return;
+      try {
+        const base = settings.firebaseUrl.replace(/\/$/, "");
+        const [cfgRes, ordRes] = await Promise.all([
+          fetch(`${base}/storeConfig.json`),
+          fetch(`${base}/ordersList.json`)
+        ]);
+        const cfgData = await cfgRes.json();
+        const ordData = await ordRes.json();
+
+        if (cfgData) {
+          if (cfgData.settings) {
+            settings = { ...settings, ...cfgData.settings, firebaseUrl: settings.firebaseUrl };
+            localStorage.setItem("emp593_settings", JSON.stringify(settings));
+          }
+          if (Array.isArray(cfgData.categories)) {
+            categories = cfgData.categories;
+            localStorage.setItem("emp593_categories", JSON.stringify(categories));
+          }
+          if (Array.isArray(cfgData.products)) {
+            products = cfgData.products.map(p => ({
+              ...p,
+              extras: Array.isArray(p.extras) ? p.extras : [...DEFAULT_EXTRAS_FOOD]
+            }));
+            localStorage.setItem("emp593_products", JSON.stringify(products));
+          }
+          applySettingsToUI();
+          renderCategories();
+          renderProducts();
+        }
+
+        if (Array.isArray(ordData)) {
+          orders = ordData;
+          localStorage.setItem("emp593_orders", JSON.stringify(orders));
+          renderAdminOrders();
+        }
+      } catch (e) {
+        console.warn("Error al leer desde Firebase:", e);
+      }
+    }
+  </script>
+</body>
+</html>
