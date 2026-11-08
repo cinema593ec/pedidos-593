@@ -37,8 +37,8 @@
 
       <div class="flex items-center gap-2 sm:gap-3">
         <!-- Botón Vista Tienda / Admin -->
-        <button onclick="toggleView()" id="btnToggleView" class="bg-white/15 hover:bg-white/25 text-white text-xs sm:text-sm font-semibold px-3 py-2 rounded-xl backdrop-blur-sm transition flex items-center gap-2 border border-white/20">
-          <i class="fa-solid fa-database"></i>
+        <button onclick="handleAdminNavClick()" id="btnToggleView" class="bg-white/15 hover:bg-white/25 text-white text-xs sm:text-sm font-semibold px-3 py-2 rounded-xl backdrop-blur-sm transition flex items-center gap-2 border border-white/20">
+          <i class="fa-solid fa-lock" id="adminNavIcon"></i>
           <span id="toggleViewText">Panel Admin (BD)</span>
         </button>
 
@@ -52,6 +52,43 @@
     </div>
   </header>
 
+  <!-- MODAL DE LOGIN DE ADMINISTRACIÓN (SEGURIDAD JERÁRQUICA) -->
+  <div id="loginModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-sm overflow-hidden p-6 space-y-4">
+      <div class="text-center">
+        <div class="w-12 h-12 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mx-auto mb-2 text-xl shadow-inner">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <h3 class="font-extrabold text-lg text-slate-900">Acceso Restringido</h3>
+        <p class="text-xs text-slate-500 mt-0.5">Ingresa tus credenciales autorizadas</p>
+        <p class="text-[11px] text-amber-800 bg-amber-50 p-2 rounded-lg mt-2 border border-amber-200">
+          💡 <strong>Credencial Máster inicial:</strong> Usuario: <code>admin</code> | Clave: <code>593master</code>
+        </p>
+      </div>
+
+      <form onsubmit="handleLoginSubmit(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Usuario</label>
+          <input type="text" id="loginUsername" required placeholder="Tu nombre de usuario" class="w-full px-3 py-2 border rounded-xl text-sm bg-slate-50" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Contraseña</label>
+          <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full px-3 py-2 border rounded-xl text-sm bg-slate-50" />
+        </div>
+        <div id="loginErrorMsg" class="text-xs text-red-600 font-bold text-center hidden"></div>
+        
+        <div class="flex gap-2 pt-2">
+          <button type="button" onclick="closeLoginModal()" class="flex-1 py-2.5 border rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50">
+            Cancelar
+          </button>
+          <button type="submit" class="flex-1 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-extrabold shadow">
+            Iniciar Sesión
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- CONTENIDO PRINCIPAL: TIENDA (FRONTEND) -->
   <main id="storeView" class="flex-1 max-w-6xl w-full mx-auto px-4 py-6">
     <!-- Banner Hero -->
@@ -64,7 +101,7 @@
           Empanadas de Verde, Bolones y Corviches a Domicilio
         </h2>
         <p class="text-slate-300 text-sm sm:text-base mb-4">
-          Personaliza cada plato con tus extras favoritos (ají, salsa de tomate, porción de papas, arroz, mozzarella extra) y envíalo a nuestro WhatsApp.
+          Personaliza cada plato con tus extras favoritos y envíalo a nuestro WhatsApp con un solo clic.
         </p>
         <div class="flex flex-wrap gap-3 text-xs font-medium text-amber-200">
           <span class="bg-white/10 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
@@ -81,7 +118,7 @@
     <!-- Barra de Búsqueda y Categorías -->
     <div class="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between mb-6">
       <div id="categoryContainer" class="flex gap-2 overflow-x-auto pb-1">
-        <!-- Categorías dinámicas e infinitas -->
+        <!-- Categorías dinámicas -->
       </div>
       <div class="relative w-full md:w-72">
         <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
@@ -101,35 +138,41 @@
     </div>
   </main>
 
-  <!-- CONTENIDO PRINCIPAL: PANEL ADMIN / BACKEND (BD) -->
+  <!-- CONTENIDO PRINCIPAL: PANEL ADMIN / BACKEND (CON JERARQUÍAS Y USUARIOS) -->
   <section id="adminView" class="hidden flex-1 max-w-6xl w-full mx-auto px-4 py-6">
     <div class="bg-white rounded-2xl shadow-md border border-slate-200 p-5 mb-6">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-5">
         <div>
           <div class="flex items-center gap-2">
-            <h2 class="text-xl font-extrabold text-slate-800">Panel Backend y Base de Datos</h2>
-            <span id="dbStatusBadge" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
-              Sincronizado
+            <h2 class="text-xl font-extrabold text-slate-800">Panel Backend y Seguridad</h2>
+            <span id="currentUserBadge" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-orange-100 text-orange-800">
+              Sesión: admin (Máster)
             </span>
           </div>
           <p class="text-xs text-slate-500 mt-1">
-            Edita pedidos, crea categorías infinitas, selecciona o edita extras desde la lista desplegable y configura tus datos bancarios.
+            Gestión protegida de pedidos, menús, extras y control de usuarios y jerarquías.
           </p>
         </div>
-        <div class="flex flex-wrap gap-2">
+        <div class="flex flex-wrap gap-2 items-center">
           <button onclick="switchAdminTab('orders')" id="tabBtnOrders" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-orange-600 text-white">
             <i class="fa-solid fa-receipt mr-1"></i> Pedidos (<span id="adminOrdersCount">0</span>)
           </button>
           <button onclick="switchAdminTab('menu')" id="tabBtnMenu" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200">
-            <i class="fa-solid fa-tags mr-1"></i> Categorías, Menú y Extras
+            <i class="fa-solid fa-tags mr-1"></i> Menú y Extras
+          </button>
+          <button onclick="switchAdminTab('users')" id="tabBtnUsers" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200">
+            <i class="fa-solid fa-users-gear mr-1"></i> Control Usuarios
           </button>
           <button onclick="switchAdminTab('settings')" id="tabBtnSettings" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200">
-            <i class="fa-solid fa-building-columns mr-1"></i> Banco, Ajustes y BD
+            <i class="fa-solid fa-building-columns mr-1"></i> Banco y Ajustes
+          </button>
+          <button onclick="handleLogout()" class="px-3 py-2 rounded-xl text-xs font-bold bg-red-50 text-red-600 hover:bg-red-100 border border-red-200" title="Cerrar sesión">
+            <i class="fa-solid fa-right-from-bracket"></i>
           </button>
         </div>
       </div>
 
-      <!-- PESTAÑA 1: PEDIDOS EN BASE DE DATOS -->
+      <!-- PESTAÑA 1: PEDIDOS -->
       <div id="adminTabOrders">
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
           <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
@@ -150,21 +193,15 @@
           </div>
         </div>
 
-        <div id="ordersListContainer" class="space-y-3">
-          <!-- Lista de pedidos con botón Editar y Eliminar -->
-        </div>
+        <div id="ordersListContainer" class="space-y-3"></div>
       </div>
 
-      <!-- PESTAÑA 2: GESTIÓN DE CATEGORÍAS INFINITAS, PRODUCTOS Y LISTA DESPLEGABLE DE EXTRAS -->
+      <!-- PESTAÑA 2: MENÚ Y EXTRAS -->
       <div id="adminTabMenu" class="hidden space-y-6">
-        <!-- Gestor de Categorías Infinitas -->
         <div class="bg-amber-50/70 p-4 rounded-xl border border-amber-200">
           <h3 class="font-bold text-sm text-amber-950 mb-1">
             <i class="fa-solid fa-layer-group mr-1 text-orange-600"></i> Gestor de Categorías Infinitas
           </h3>
-          <p class="text-xs text-amber-800 mb-3">
-            Agrega todas las categorías que necesites (ej. Empanadas, Bolones, Humitas, Almuerzos, Porciones, Bebidas...).
-          </p>
           <form onsubmit="handleAddCategory(event)" class="flex flex-col sm:flex-row gap-2 mb-3">
             <input type="text" id="newCategoryName" required placeholder="Escribe el nombre de la nueva categoría..." class="flex-1 px-3 py-2 rounded-lg border border-amber-300 text-sm bg-white" />
             <button type="submit" class="bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition whitespace-nowrap">
@@ -174,125 +211,132 @@
           <div id="adminCategoriesBadges" class="flex flex-wrap gap-2"></div>
         </div>
 
-        <!-- Formulario Agregar / Editar Plato con Lista Desplegable y Gestor de Extras -->
         <form onsubmit="handleSaveProduct(event)" class="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-4">
           <div class="flex items-center justify-between border-b border-slate-200 pb-2">
             <h3 id="productFormTitle" class="font-bold text-sm text-slate-800">
               <i class="fa-solid fa-utensils text-orange-600 mr-1"></i> Crear Nuevo Producto con Extras y Adicionales
             </h3>
             <button type="button" id="btnCancelEditProduct" onclick="resetProductForm()" class="hidden text-xs text-red-600 font-bold hover:underline">
-              Cancelar edición de plato
+              Cancelar edición
             </button>
           </div>
 
           <input type="hidden" id="editProdId" value="" />
 
           <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-            <input type="text" id="newProdName" required placeholder="Nombre del plato (ej. Empanada Camarón)" class="px-3 py-2 rounded-lg border text-sm bg-white" />
+            <input type="text" id="newProdName" required placeholder="Nombre del plato" class="px-3 py-2 rounded-lg border text-sm bg-white" />
             <select id="newProdCategory" class="px-3 py-2 rounded-lg border text-sm bg-white"></select>
-            <input type="number" step="0.01" id="newProdPrice" required placeholder="Precio Base en USD (ej. 2.50)" class="px-3 py-2 rounded-lg border text-sm bg-white" />
+            <input type="number" step="0.01" id="newProdPrice" required placeholder="Precio Base USD" class="px-3 py-2 rounded-lg border text-sm bg-white" />
             <input type="text" id="newProdImage" placeholder="URL de foto (opcional)" class="px-3 py-2 rounded-lg border text-sm sm:col-span-2 bg-white" />
-            <input type="text" id="newProdDesc" required placeholder="Descripción corta del plato" class="px-3 py-2 rounded-lg border text-sm bg-white" />
+            <input type="text" id="newProdDesc" required placeholder="Descripción corta" class="px-3 py-2 rounded-lg border text-sm bg-white" />
           </div>
 
-          <!-- APARTADO DE EXTRAS CON LISTA DESPLEGABLE Y EDICIÓN DE EXTRAS -->
           <div class="bg-white p-4 rounded-xl border-2 border-orange-200 space-y-4">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2">
-              <div>
-                <h4 class="font-bold text-xs sm:text-sm text-slate-800 flex items-center gap-1.5">
-                  <i class="fa-solid fa-list-check text-orange-600"></i>
-                  Apartado de Extras y Adicionales del Producto
-                </h4>
-                <p class="text-[11px] text-slate-500">
-                  Selecciona extras desde la <strong>lista desplegable</strong> para asignarlos a este plato, o crea y edita los extras existentes.
-                </p>
-              </div>
+              <h4 class="font-bold text-xs sm:text-sm text-slate-800 flex items-center gap-1.5">
+                <i class="fa-solid fa-list-check text-orange-600"></i> Apartado de Extras y Adicionales
+              </h4>
               <button type="button" onclick="addAllCatalogExtrasToProduct()" class="text-[11px] bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold px-3 py-1.5 rounded-lg whitespace-nowrap transition">
-                <i class="fa-solid fa-layer-group mr-1"></i> Asignar Todos los Extras de la Lista
+                Asignar Todos los Extras
               </button>
             </div>
 
-            <!-- 1. LISTA DESPLEGABLE PARA SELECCIONAR EXTRAS YA CREADOS -->
             <div class="bg-orange-50/60 p-3 rounded-xl border border-orange-200/80 space-y-2">
-              <label class="block text-xs font-bold text-orange-950">
-                1. Seleccionar Extra de la Lista Desplegable:
-              </label>
+              <label class="block text-xs font-bold text-orange-950">Seleccionar Extra de la Lista Desplegable:</label>
               <div class="flex flex-col sm:flex-row gap-2">
-                <select id="masterExtrasDropdown" class="flex-1 px-3 py-2 rounded-lg border border-orange-300 text-xs sm:text-sm bg-white font-semibold text-slate-800">
-                  <!-- Opciones del catálogo de extras -->
-                </select>
+                <select id="masterExtrasDropdown" class="flex-1 px-3 py-2 rounded-lg border border-orange-300 text-xs sm:text-sm bg-white font-semibold text-slate-800"></select>
                 <button type="button" onclick="addSelectedDropdownExtraToProduct()" class="bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold px-4 py-2 rounded-lg whitespace-nowrap transition">
                   <i class="fa-solid fa-circle-plus mr-1"></i> Agregar al Producto
                 </button>
-                <button type="button" onclick="loadSelectedDropdownExtraForEdit()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3.5 py-2 rounded-lg whitespace-nowrap transition" title="Editar nombre o precio de este extra">
-                  <i class="fa-solid fa-pen mr-1"></i> Editar Extra Elegido
+                <button type="button" onclick="loadSelectedDropdownExtraForEdit()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3.5 py-2 rounded-lg whitespace-nowrap transition">
+                  <i class="fa-solid fa-pen mr-1"></i> Editar Extra
                 </button>
-                <button type="button" onclick="deleteSelectedDropdownExtraFromCatalog()" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-bold px-3 py-2 rounded-lg whitespace-nowrap transition" title="Eliminar este extra de la lista desplegable">
+                <button type="button" onclick="deleteSelectedDropdownExtraFromCatalog()" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-bold px-3 py-2 rounded-lg whitespace-nowrap transition">
                   <i class="fa-solid fa-trash"></i>
                 </button>
               </div>
             </div>
 
-            <!-- 2. FORMULARIO PARA CREAR MÁS EXTRAS O EDITAR UN EXTRA EXISTENTE -->
             <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
               <div class="flex items-center justify-between">
-                <label id="extraBuilderTitle" class="block text-xs font-bold text-slate-700">
-                  <i class="fa-solid fa-plus-circle text-emerald-600 mr-1"></i> 2. Crear Nuevo Extra (o Editar Extra Existente):
-                </label>
-                <button type="button" id="btnCancelExtraEdit" onclick="cancelExtraEditMode()" class="hidden text-[11px] text-red-600 font-bold hover:underline">
-                  Cancelar edición de extra
-                </button>
+                <label id="extraBuilderTitle" class="block text-xs font-bold text-slate-700">Crear o Editar Extra:</label>
+                <button type="button" id="btnCancelExtraEdit" onclick="cancelExtraEditMode()" class="hidden text-[11px] text-red-600 font-bold hover:underline">Cancelar</button>
               </div>
               <input type="hidden" id="editingExtraOriginalName" value="" />
               <div class="flex flex-col sm:flex-row gap-2">
-                <input type="text" id="customExtraName" placeholder="Nombre del extra (ej. Salsa de Tomate, Porción de Papas, Arroz Extra...)" class="flex-1 px-3 py-2 border rounded-lg text-xs bg-white" />
-                <input type="number" step="0.05" id="customExtraPrice" placeholder="Precio USD (ej. 1.50 o 0 si es gratis)" class="w-full sm:w-52 px-3 py-2 border rounded-lg text-xs bg-white" />
+                <input type="text" id="customExtraName" placeholder="Nombre del extra (ej. Salsa, Porción papas...)" class="flex-1 px-3 py-2 border rounded-lg text-xs bg-white" />
+                <input type="number" step="0.05" id="customExtraPrice" placeholder="Precio $" class="w-full sm:w-44 px-3 py-2 border rounded-lg text-xs bg-white" />
                 <button type="button" id="btnSaveExtraCatalog" onclick="handleSaveOrUpdateExtra()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold px-4 py-2 rounded-lg whitespace-nowrap transition">
-                  <i class="fa-solid fa-floppy-disk mr-1"></i> Guardar en Lista y Asignar
+                  Guardar Extra
                 </button>
               </div>
-              <p class="text-[11px] text-slate-500">
-                * Al crear o editar un extra aquí, se actualiza automáticamente en la lista desplegable y en los productos.
-              </p>
             </div>
 
-            <!-- 3. EXTRAS ASIGNADOS ACTUALMENTE A ESTE PRODUCTO (CON BOTÓN DE EDITAR Y QUITAR) -->
-            <div>
-              <div class="flex items-center justify-between mb-1.5">
-                <span class="text-xs font-bold text-slate-700">
-                  3. Extras habilitados para este producto (haz clic en <i class="fa-solid fa-pen text-blue-600"></i> para editar o en <i class="fa-solid fa-xmark text-red-500"></i> para quitar):
-                </span>
-                <button type="button" onclick="clearProductExtras()" class="text-[11px] text-slate-400 hover:text-red-600 font-semibold">
-                  Vaciar extras del plato
-                </button>
-              </div>
-              <div id="productFormExtrasList" class="flex flex-wrap gap-2 pt-1"></div>
-            </div>
+            <div id="productFormExtrasList" class="flex flex-wrap gap-2 pt-1"></div>
           </div>
 
           <button type="submit" id="btnSaveProductSubmit" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-5 py-3 rounded-xl shadow transition">
-            <i class="fa-solid fa-floppy-disk mr-1"></i> Guardar Producto con sus Extras en Base de Datos
+            <i class="fa-solid fa-floppy-disk mr-1"></i> Guardar Producto con sus Extras
           </button>
         </form>
 
-        <div id="adminMenuTable" class="divide-y divide-slate-200 border rounded-xl overflow-hidden">
-          <!-- Lista de productos con botón Editar y Eliminar -->
+        <div id="adminMenuTable" class="divide-y divide-slate-200 border rounded-xl overflow-hidden"></div>
+      </div>
+
+      <!-- PESTAÑA 3: CONTROL DE USUARIOS Y JERARQUÍAS (EXCLUSIVO MÁSTER) -->
+      <div id="adminTabUsers" class="hidden space-y-6">
+        <div id="masterOnlyGuard" class="hidden bg-amber-50 border-2 border-amber-300 p-6 rounded-2xl text-center space-y-2">
+          <i class="fa-solid fa-triangle-exclamation text-amber-600 text-3xl"></i>
+          <h3 class="font-bold text-base text-amber-950">Acceso Restringido al Usuario Máster</h3>
+          <p class="text-xs text-amber-800">Solo el usuario Máster puede crear, modificar jerarquías o eliminar cuentas de usuario.</p>
+        </div>
+
+        <div id="masterUsersContent" class="space-y-6">
+          <form onsubmit="handleSaveUser(event)" class="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-4">
+            <h3 class="font-bold text-sm text-slate-800 flex items-center gap-1.5">
+              <i class="fa-solid fa-user-plus text-orange-600"></i> Registrar Nuevo Usuario o Asignar Jerarquía
+            </h3>
+            <input type="hidden" id="editingUsernameOriginal" value="" />
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Nombre de Usuario</label>
+                <input type="text" id="newUsrName" required placeholder="ej. cajero1" class="w-full px-3 py-2 rounded-lg border text-sm bg-white" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Contraseña</label>
+                <input type="text" id="newUsrPass" required placeholder="clave de acceso" class="w-full px-3 py-2 rounded-lg border text-sm bg-white font-mono" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Jerarquía / Rol</label>
+                <select id="newUsrRole" class="w-full px-3 py-2 rounded-lg border text-sm bg-white font-semibold">
+                  <option value="Cajero">Cajero (Pedidos y Cobros)</option>
+                  <option value="Cocinero">Cocinero (Ver y Preparar Pedidos)</option>
+                  <option value="Administrador">Administrador (Total sin rol Máster)</option>
+                </select>
+              </div>
+            </div>
+            <button type="submit" id="btnSaveUserSubmit" class="bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition">
+              <i class="fa-solid fa-check mr-1"></i> Guardar Usuario en el Sistema
+            </button>
+          </form>
+
+          <div>
+            <h4 class="font-bold text-sm text-slate-800 mb-3">Usuarios Autorizados en el Sistema</h4>
+            <div id="usersListTable" class="divide-y divide-slate-200 border rounded-xl overflow-hidden bg-white"></div>
+          </div>
         </div>
       </div>
 
-      <!-- PESTAÑA 3: DATOS BANCARIOS DE TRANSFERENCIA, LOCAL Y FIREBASE -->
+      <!-- PESTAÑA 4: BANCO Y AJUSTES -->
       <div id="adminTabSettings" class="hidden space-y-6">
         <div class="bg-emerald-50/70 p-5 rounded-xl border border-emerald-200">
           <h3 class="font-bold text-sm text-emerald-950 mb-1 flex items-center gap-2">
             <i class="fa-solid fa-building-columns text-emerald-600"></i> Datos Bancarios para Transferencia y Deuna!
           </h3>
-          <p class="text-xs text-emerald-800 mb-4">
-            Estos datos aparecerán automáticamente en el Carrito de Compras cuando el cliente seleccione pagar con <strong>Transferencia Bancaria / Deuna!</strong>
-          </p>
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-3">
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">Entidad Bancaria</label>
-              <input type="text" id="cfgBankName" placeholder="Ej. Banco Pichincha / Guayaquil" class="w-full px-3 py-2 rounded-lg border text-sm bg-white" />
+              <input type="text" id="cfgBankName" class="w-full px-3 py-2 rounded-lg border text-sm bg-white" />
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">Tipo de Cuenta</label>
@@ -303,110 +347,85 @@
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">Número de Cuenta</label>
-              <input type="text" id="cfgAccountNumber" placeholder="Ej. 2200112233" class="w-full px-3 py-2 rounded-lg border text-sm bg-white font-mono" />
+              <input type="text" id="cfgAccountNumber" class="w-full px-3 py-2 rounded-lg border text-sm bg-white font-mono" />
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">Nombre del Titular</label>
-              <input type="text" id="cfgAccountHolder" placeholder="Nombre y Apellido del dueño" class="w-full px-3 py-2 rounded-lg border text-sm bg-white" />
+              <input type="text" id="cfgAccountHolder" class="w-full px-3 py-2 rounded-lg border text-sm bg-white" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-slate-700 mb-1">Número de Cédula o RUC</label>
-              <input type="text" id="cfgAccountId" placeholder="Ej. 1712345678001" class="w-full px-3 py-2 rounded-lg border text-sm bg-white font-mono" />
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Cédula o RUC</label>
+              <input type="text" id="cfgAccountId" class="w-full px-3 py-2 rounded-lg border text-sm bg-white font-mono" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-slate-700 mb-1">Correo para Comprobante (opcional)</label>
-              <input type="email" id="cfgAccountEmail" placeholder="pagos@restaurante.com" class="w-full px-3 py-2 rounded-lg border text-sm bg-white" />
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Correo</label>
+              <input type="email" id="cfgAccountEmail" class="w-full px-3 py-2 rounded-lg border text-sm bg-white" />
             </div>
             <div class="sm:col-span-2 md:col-span-3">
-              <label class="block text-xs font-semibold text-slate-700 mb-1">Celular Deuna! / Nota de Transferencia</label>
-              <input type="text" id="cfgDeunaNote" placeholder="Ej. También puedes pagar en Deuna! al número 0989513973. Recuerda enviar el comprobante por WhatsApp." class="w-full px-3 py-2 rounded-lg border text-sm bg-white" />
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Celular Deuna! / Nota</label>
+              <input type="text" id="cfgDeunaNote" class="w-full px-3 py-2 rounded-lg border text-sm bg-white" />
             </div>
           </div>
           <button onclick="saveStoreSettings()" class="mt-4 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition">
-            <i class="fa-solid fa-floppy-disk mr-1"></i> Guardar Datos Bancarios y Configuración
+            Guardar Datos Bancarios
           </button>
         </div>
 
-        <!-- Datos del Restaurante y WhatsApp -->
         <div class="bg-slate-50 p-5 rounded-xl border border-slate-200">
-          <h3 class="font-bold text-sm text-slate-800 mb-3">Datos Generales del Restaurante y Envío</h3>
+          <h3 class="font-bold text-sm text-slate-800 mb-3">Datos Generales del Restaurante</h3>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre del Restaurante</label>
               <input type="text" id="cfgStoreName" class="w-full px-3 py-2 rounded-lg border text-sm bg-white" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1">WhatsApp Receptor (con código 593)</label>
-              <input type="text" id="cfgWhatsapp" placeholder="593989513973" class="w-full px-3 py-2 rounded-lg border text-sm bg-white font-mono" />
+              <label class="block text-xs font-semibold text-slate-600 mb-1">WhatsApp Receptor</label>
+              <input type="text" id="cfgWhatsapp" class="w-full px-3 py-2 rounded-lg border text-sm bg-white font-mono" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1">Costo de Envío a Domicilio ($)</label>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Costo de Envío ($)</label>
               <input type="number" step="0.25" id="cfgDeliveryFee" class="w-full px-3 py-2 rounded-lg border text-sm bg-white" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1">Envío Gratis a partir de ($)</label>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Envío Gratis desde ($)</label>
               <input type="number" step="0.50" id="cfgFreeThreshold" class="w-full px-3 py-2 rounded-lg border text-sm bg-white" />
             </div>
           </div>
           <button onclick="saveStoreSettings()" class="mt-4 bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition">
-            <i class="fa-solid fa-floppy-disk mr-1"></i> Guardar Datos del Local
+            Guardar Configuración
           </button>
         </div>
 
-        <!-- Conexión Firebase Realtime Database -->
         <div class="bg-blue-50/70 p-5 rounded-xl border border-blue-200">
-          <h3 class="font-bold text-sm text-blue-950 mb-1">
-            <i class="fa-solid fa-cloud mr-1 text-blue-600"></i> Base de Datos en la Nube (Google Firebase Realtime Database)
-          </h3>
-          <p class="text-xs text-blue-800 mb-3">
-            Pega aquí el enlace de tu <strong>Firebase Realtime Database</strong> (ej. <code>https://empanadas-593-default-rtdb.firebaseio.com</code>) para sincronizar pedidos, categorías, catálogo de extras, menú y datos bancarios:
-          </p>
-          <div class="flex flex-col sm:flex-row gap-2">
+          <h3 class="font-bold text-sm text-blue-950 mb-1">Google Firebase Realtime Database</h3>
+          <div class="flex flex-col sm:flex-row gap-2 mt-2">
             <input type="url" id="cfgFirebaseUrl" placeholder="https://tu-proyecto-default-rtdb.firebaseio.com" class="flex-1 px-3 py-2 rounded-lg border text-sm bg-white font-mono" />
-            <button onclick="saveStoreSettings()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl">
-              Conectar y Sincronizar Firebase
-            </button>
+            <button onclick="saveStoreSettings()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-xl">Conectar Nube</button>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- MODAL PARA EDITAR CUALQUIER PEDIDO EN EL BACKEND -->
+  <!-- MODAL EDITAR PEDIDO -->
   <div id="editOrderModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden">
       <div class="bg-slate-900 text-white px-5 py-4 flex items-center justify-between">
         <h3 class="font-bold text-sm sm:text-base flex items-center gap-2">
-          <i class="fa-solid fa-pen-to-square text-amber-400"></i>
-          Editar Pedido <span id="editModalOrderId" class="text-amber-300 font-mono"></span>
+          <i class="fa-solid fa-pen-to-square text-amber-400"></i> Editar Pedido <span id="editModalOrderId" class="text-amber-300 font-mono"></span>
         </h3>
-        <button onclick="closeEditOrderModal()" class="text-slate-400 hover:text-white">
-          <i class="fa-solid fa-xmark text-lg"></i>
-        </button>
+        <button onclick="closeEditOrderModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
       <form onsubmit="saveEditedOrder(event)" class="p-5 space-y-3 max-h-[80vh] overflow-y-auto custom-scroll text-xs">
         <input type="hidden" id="editOrderIndex" />
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class="font-bold text-slate-700 block mb-1">Nombre del Cliente</label>
-            <input type="text" id="editOrdName" required class="w-full px-3 py-2 border rounded-lg" />
-          </div>
-          <div>
-            <label class="font-bold text-slate-700 block mb-1">Teléfono / WhatsApp</label>
-            <input type="text" id="editOrdPhone" required class="w-full px-3 py-2 border rounded-lg" />
-          </div>
+          <div><label class="font-bold block mb-1">Cliente</label><input type="text" id="editOrdName" required class="w-full px-3 py-2 border rounded-lg" /></div>
+          <div><label class="font-bold block mb-1">Teléfono</label><input type="text" id="editOrdPhone" required class="w-full px-3 py-2 border rounded-lg" /></div>
         </div>
-        <div>
-          <label class="font-bold text-slate-700 block mb-1">Dirección de Entrega</label>
-          <input type="text" id="editOrdAddress" class="w-full px-3 py-2 border rounded-lg" />
-        </div>
-        <div>
-          <label class="font-bold text-slate-700 block mb-1">Referencia</label>
-          <input type="text" id="editOrdRef" class="w-full px-3 py-2 border rounded-lg" />
-        </div>
+        <div><label class="font-bold block mb-1">Dirección</label><input type="text" id="editOrdAddress" class="w-full px-3 py-2 border rounded-lg" /></div>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
-            <label class="font-bold text-slate-700 block mb-1">Estado del Pedido</label>
+            <label class="font-bold block mb-1">Estado</label>
             <select id="editOrdStatus" class="w-full px-3 py-2 border rounded-lg bg-white font-semibold">
               <option value="Pendiente">Pendiente</option>
               <option value="En preparación">En preparación</option>
@@ -416,54 +435,34 @@
             </select>
           </div>
           <div>
-            <label class="font-bold text-slate-700 block mb-1">Método de Pago</label>
+            <label class="font-bold block mb-1">Pago</label>
             <select id="editOrdPayment" class="w-full px-3 py-2 border rounded-lg bg-white">
               <option value="Efectivo">Efectivo</option>
               <option value="Transferencia / Deuna">Transferencia / Deuna</option>
             </select>
           </div>
-          <div>
-            <label class="font-bold text-slate-700 block mb-1">Total a Cobrar ($)</label>
-            <input type="number" step="0.01" id="editOrdTotal" required class="w-full px-3 py-2 border rounded-lg font-extrabold text-orange-600" />
-          </div>
+          <div><label class="font-bold block mb-1">Total ($)</label><input type="number" step="0.01" id="editOrdTotal" required class="w-full px-3 py-2 border rounded-lg font-extrabold text-orange-600" /></div>
         </div>
-        <div>
-          <label class="font-bold text-slate-700 block mb-1">Productos y Extras del Pedido</label>
-          <textarea id="editOrdItemsText" rows="4" class="w-full px-3 py-2 border rounded-lg font-mono text-xs" placeholder="Un producto por línea..."></textarea>
-        </div>
-        <div>
-          <label class="font-bold text-slate-700 block mb-1">Notas del Pedido / Vuelto</label>
-          <input type="text" id="editOrdNotes" class="w-full px-3 py-2 border rounded-lg" />
-        </div>
+        <div><label class="font-bold block mb-1">Productos</label><textarea id="editOrdItemsText" rows="3" class="w-full px-3 py-2 border rounded-lg font-mono text-xs"></textarea></div>
         <div class="flex justify-end gap-2 pt-3 border-t">
-          <button type="button" onclick="closeEditOrderModal()" class="px-4 py-2 rounded-xl border text-slate-600 font-bold">
-            Cancelar
-          </button>
-          <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold">
-            <i class="fa-solid fa-check mr-1"></i> Guardar Cambios del Pedido
-          </button>
+          <button type="button" onclick="closeEditOrderModal()" class="px-4 py-2 rounded-xl border text-slate-600 font-bold">Cancelar</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 text-white font-bold">Guardar</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- DRAWER LATERAL DEL CARRITO Y CHECKOUT -->
+  <!-- CARRITO -->
   <div id="cartOverlay" onclick="toggleCart(false)" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 hidden"></div>
-
   <aside id="cartDrawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-50 translate-x-full transition-transform duration-300 flex flex-col">
-    <!-- Cabecera del Carrito -->
     <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
       <div class="flex items-center gap-2.5">
         <i class="fa-solid fa-bag-shopping text-amber-400 text-lg"></i>
         <h3 class="font-bold text-base">Tu Carrito de Pedido</h3>
       </div>
-      <button onclick="toggleCart(false)" class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
+      <button onclick="toggleCart(false)" class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
     </div>
-
-    <!-- Barra progreso envío gratis -->
-    <div id="freeDeliveryBanner" class="bg-amber-50 px-4 py-2.5 border-b border-amber-200 text-xs text-amber-900">
+    <div class="bg-amber-50 px-4 py-2.5 border-b border-amber-200 text-xs text-amber-900">
       <div class="flex justify-between font-semibold mb-1">
         <span id="freeDeliveryText">Agrega $12.00 más para envío GRATIS</span>
         <span id="freeDeliveryPercent">0%</span>
@@ -472,114 +471,690 @@
         <div id="freeDeliveryBar" class="h-full bg-emerald-500 transition-all duration-300" style="width: 0%"></div>
       </div>
     </div>
-
-    <!-- Contenido scrollable: Ítems + Formulario de Entrega -->
     <div class="flex-1 overflow-y-auto custom-scroll p-4 space-y-5">
-      <!-- Lista de productos en carrito -->
       <div id="cartItemsContainer" class="space-y-3"></div>
-
-      <!-- Formulario de Entrega -->
-      <div id="checkoutFormSection" class="border-t border-slate-200 pt-4 space-y-3">
-        <h4 class="font-bold text-sm text-slate-800 flex items-center gap-1.5">
-          <i class="fa-solid fa-location-dot text-orange-600"></i> Datos de Entrega y Pago
-        </h4>
-
-        <!-- Tipo de Entrega -->
+      <div class="border-t border-slate-200 pt-4 space-y-3">
+        <h4 class="font-bold text-sm text-slate-800 flex items-center gap-1.5"><i class="fa-solid fa-location-dot text-orange-600"></i> Datos de Entrega y Pago</h4>
         <div class="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-xl">
-          <button type="button" onclick="setDeliveryMode('domicilio')" id="btnModeDomicilio" class="py-2 rounded-lg text-xs font-bold bg-white text-slate-900 shadow-xs">
-            <i class="fa-solid fa-motorcycle mr-1 text-orange-600"></i> A Domicilio
-          </button>
-          <button type="button" onclick="setDeliveryMode('retiro')" id="btnModeRetiro" class="py-2 rounded-lg text-xs font-bold text-slate-600">
-            <i class="fa-solid fa-store mr-1"></i> Retiro en Local
-          </button>
+          <button type="button" onclick="setDeliveryMode('domicilio')" id="btnModeDomicilio" class="py-2 rounded-lg text-xs font-bold bg-white text-slate-900 shadow-xs"><i class="fa-solid fa-motorcycle mr-1 text-orange-600"></i> A Domicilio</button>
+          <button type="button" onclick="setDeliveryMode('retiro')" id="btnModeRetiro" class="py-2 rounded-lg text-xs font-bold text-slate-600"><i class="fa-solid fa-store mr-1"></i> Retiro en Local</button>
         </div>
-
-        <input type="text" id="custName" placeholder="Tu Nombre y Apellido *" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm" />
-        <input type="tel" id="custPhone" placeholder="Tu Teléfono / Celular *" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm" />
-
+        <input type="text" id="custName" placeholder="Tu Nombre y Apellido *" class="w-full px-3 py-2 border rounded-xl text-sm" />
+        <input type="tel" id="custPhone" placeholder="Tu Teléfono / Celular *" class="w-full px-3 py-2 border rounded-xl text-sm" />
         <div id="addressFields" class="space-y-2.5">
-          <input type="text" id="custAddress" placeholder="Dirección exacta (Sector, Calle principal y secundaria) *" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm" />
-          <input type="text" id="custRef" placeholder="Referencia (Ej. Casa blanca frente al parque)" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm" />
-          
-          <!-- Botón GPS -->
-          <div class="flex items-center gap-2">
-            <button type="button" onclick="captureGPS()" id="btnGps" class="w-full py-2 px-3 rounded-xl border border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-xs flex items-center justify-center gap-2 transition">
-              <i class="fa-solid fa-location-crosshairs"></i> Adjuntar mi ubicación GPS exacta (Google Maps)
-            </button>
-          </div>
+          <input type="text" id="custAddress" placeholder="Dirección exacta *" class="w-full px-3 py-2 border rounded-xl text-sm" />
+          <input type="text" id="custRef" placeholder="Referencia" class="w-full px-3 py-2 border rounded-xl text-sm" />
+          <button type="button" onclick="captureGPS()" id="btnGps" class="w-full py-2 px-3 rounded-xl border border-blue-300 bg-blue-50 text-blue-700 font-semibold text-xs flex items-center justify-center gap-2">
+            <i class="fa-solid fa-location-crosshairs"></i> Adjuntar mi ubicación GPS exacta
+          </button>
           <p id="gpsStatus" class="text-[11px] text-emerald-600 font-semibold hidden"></p>
         </div>
-
-        <!-- Método de pago -->
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1">Método de Pago</label>
-          <select id="custPayment" onchange="togglePaymentMethodUI()" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm bg-white font-semibold text-slate-800">
+          <select id="custPayment" onchange="togglePaymentMethodUI()" class="w-full px-3 py-2 border rounded-xl text-sm bg-white font-semibold">
             <option value="Efectivo">💵 Efectivo contra entrega</option>
             <option value="Transferencia / Deuna">🏦 Transferencia Bancaria / Deuna!</option>
           </select>
         </div>
-
-        <!-- Caja para Efectivo -->
         <div id="cashChangeBox">
-          <input type="text" id="custCashNote" placeholder="¿Con qué billete pagas para llevar tu vuelto? (Ej. $20)" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm" />
+          <input type="text" id="custCashNote" placeholder="¿Con qué billete pagas para tu vuelto?" class="w-full px-3 py-2 border rounded-xl text-sm" />
         </div>
-
-        <!-- TARJETA AUTOMÁTICA DE DATOS BANCARIOS PARA TRANSFERENCIA / DEUNA -->
-        <div id="bankTransferBox" class="hidden bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-300 rounded-2xl p-3.5 space-y-2.5 shadow-xs">
-          <div class="flex items-center justify-between border-b border-emerald-200 pb-2">
-            <div class="flex items-center gap-2">
-              <i class="fa-solid fa-building-columns text-emerald-700 text-base"></i>
-              <span class="font-extrabold text-xs text-emerald-950 uppercase tracking-wide">Datos para tu Transferencia</span>
-            </div>
-            <button type="button" onclick="copyAllBankDetails()" class="text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-1 rounded-lg transition">
-              <i class="fa-regular fa-copy mr-1"></i> Copiar Todo
-            </button>
+        <div id="bankTransferBox" class="hidden bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-3.5 space-y-2 text-xs">
+          <div class="flex justify-between items-center border-b pb-2 font-extrabold text-emerald-950">
+            <span>Datos de Transferencia</span>
+            <button type="button" onclick="copyAllBankDetails()" class="bg-emerald-600 text-white px-2 py-1 rounded">Copiar</button>
           </div>
-
-          <div class="space-y-1.5 text-xs text-slate-800">
-            <div class="flex justify-between items-center bg-white/80 px-2.5 py-1.5 rounded-lg border border-emerald-100">
-              <span class="text-slate-500">Banco:</span>
-              <span id="viewBankName" class="font-bold text-slate-900">Banco Pichincha</span>
-            </div>
-            <div class="flex justify-between items-center bg-white/80 px-2.5 py-1.5 rounded-lg border border-emerald-100">
-              <span class="text-slate-500">Tipo:</span>
-              <span id="viewAccountType" class="font-semibold text-slate-800">Cuenta de Ahorros</span>
-            </div>
-            <div class="flex justify-between items-center bg-white px-2.5 py-1.5 rounded-lg border border-emerald-200">
-              <span class="text-slate-500">N° Cuenta:</span>
-              <div class="flex items-center gap-2">
-                <span id="viewAccountNumber" class="font-mono font-extrabold text-emerald-700 text-sm">2200000000</span>
-                <button type="button" onclick="copySingleField('viewAccountNumber')" class="text-emerald-600 hover:text-emerald-800" title="Copiar cuenta">
-                  <i class="fa-regular fa-copy"></i>
-                </button>
-              </div>
-            </div>
-            <div class="flex justify-between items-center bg-white/80 px-2.5 py-1.5 rounded-lg border border-emerald-100">
-              <span class="text-slate-500">Titular:</span>
-              <span id="viewAccountHolder" class="font-bold text-slate-900">Empanadas y Algo Más 593</span>
-            </div>
-            <div class="flex justify-between items-center bg-white px-2.5 py-1.5 rounded-lg border border-emerald-200">
-              <span class="text-slate-500">Cédula / RUC:</span>
-              <div class="flex items-center gap-2">
-                <span id="viewAccountId" class="font-mono font-bold text-slate-900">1700000000</span>
-                <button type="button" onclick="copySingleField('viewAccountId')" class="text-emerald-600 hover:text-emerald-800" title="Copiar Cédula/RUC">
-                  <i class="fa-regular fa-copy"></i>
-                </button>
-              </div>
-            </div>
-            <div id="viewAccountEmailRow" class="flex justify-between items-center bg-white/80 px-2.5 py-1.5 rounded-lg border border-emerald-100">
-              <span class="text-slate-500">Correo:</span>
-              <span id="viewAccountEmail" class="font-mono text-[11px] text-slate-800"></span>
-            </div>
-          </div>
-
-          <p id="viewDeunaNote" class="text-[11px] text-emerald-900 bg-emerald-100/80 px-2.5 py-2 rounded-lg font-medium leading-snug"></p>
-          <p id="copyToast" class="text-[11px] text-center font-bold text-emerald-700 hidden">¡Datos copiados al portapapeles!</p>
+          <p><strong>Banco:</strong> <span id="viewBankName"></span></p>
+          <p><strong>Cuenta:</strong> <span id="viewAccountNumber" class="font-mono"></span></p>
+          <p><strong>Titular:</strong> <span id="viewAccountHolder"></span></p>
+          <p><strong>Cédula/RUC:</strong> <span id="viewAccountId"></span></p>
+          <p id="viewDeunaNote" class="text-[11px] text-emerald-900 bg-emerald-100 p-1.5 rounded"></p>
+          <p id="copyToast" class="text-center font-bold text-emerald-700 hidden">¡Copiado!</p>
         </div>
-
-        <textarea id="custNotes" rows="2" placeholder="Notas adicionales (ej. timbre dañado, llamar al llegar...)" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm"></textarea>
+        <textarea id="custNotes" rows="2" placeholder="Notas adicionales" class="w-full px-3 py-2 border rounded-xl text-sm"></textarea>
       </div>
     </div>
+    <div class="p-4 bg-slate-50 border-t space-y-3">
+      <div class="space-y-1 text-xs">
+        <div class="flex justify-between text-slate-600"><span>Subtotal:</span><span id="summarySubtotal">$0.00</span></div>
+        <div class="flex justify-between text-slate-600"><span>Envío:</span><span id="summaryDelivery">$0.00</span></div>
+        <div class="flex justify-between text-base font-extrabold text-slate-900 pt-1 border-t"><span>TOTAL:</span><span id="summaryTotal" class="text-orange-600">$0.00</span></div>
+      </div>
+      <button onclick="submitOrder()" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl shadow flex items-center justify-center gap-2 text-sm">
+        <i class="fa-brands fa-whatsapp text-xl"></i> Enviar Pedido por WhatsApp
+      </button>
+    </div>
+  </aside>
 
-    <!-- Pie del Carrito: Totales y Botón de WhatsApp -->
-    <div class="p-4 bg-slate-50 border-t
+  <!-- SCRIPT DE LA APLICACIÓN -->
+  <script>
+    const DEFAULT_CATEGORIES = ["Empanadas", "Bolones y Corviches", "Combos", "Bebidas"];
+    const DEFAULT_MASTER_EXTRAS = [
+      { name: "Ají de la Casa", price: 0 },
+      { name: "Salsa de Tomate", price: 0 },
+      { name: "Mayonesa", price: 0 },
+      { name: "Extra Queso Mozzarella", price: 0.75 },
+      { name: "Porción de Papas Extras", price: 1.50 },
+      { name: "Porción de Arroz Extra", price: 1.25 }
+    ];
+
+    const DEFAULT_USERS = [
+      { username: "admin", pass: "593master", role: "Máster", isMaster: true },
+      { username: "cajero1", pass: "1234", role: "Cajero", isMaster: false },
+      { username: "cocina1", pass: "1234", role: "Cocinero", isMaster: false }
+    ];
+
+    const DEFAULT_PRODUCTS = [
+      {
+        id: "emp-queso",
+        name: "Empanada de Verde con Abundante Mozzarella",
+        category: "Empanadas",
+        price: 1.75,
+        desc: "Masa de plátano verde crocante rellena de generoso queso mozzarella derretido.",
+        image: "https://images.unsplash.com/photo-1604908554025-aaa87c152c7b?auto=format&fit=crop&w=600&q=80",
+        extras: [...DEFAULT_MASTER_EXTRAS]
+      }
+    ];
+
+    const DEFAULT_SETTINGS = {
+      storeName: "Empanadas y Algo Más 593",
+      whatsapp: "593989513973",
+      deliveryFee: 2.00,
+      freeThreshold: 12.00,
+      bankName: "Banco Pichincha",
+      accountType: "Cuenta de Ahorros",
+      accountNumber: "2200123456",
+      accountHolder: "Augusto Reyes",
+      accountId: "1700000000",
+      accountEmail: "",
+      deunaNote: "Paga por Deuna! al 0989513973.",
+      firebaseUrl: ""
+    };
+
+    let categories = JSON.parse(localStorage.getItem("emp593_categories")) || DEFAULT_CATEGORIES;
+    let masterExtras = JSON.parse(localStorage.getItem("emp593_master_extras")) || DEFAULT_MASTER_EXTRAS;
+    let users = JSON.parse(localStorage.getItem("emp593_users")) || DEFAULT_USERS;
+    let products = JSON.parse(localStorage.getItem("emp593_products")) || DEFAULT_PRODUCTS;
+    let settings = { ...DEFAULT_SETTINGS, ...(JSON.parse(localStorage.getItem("emp593_settings")) || {}) };
+    let orders = JSON.parse(localStorage.getItem("emp593_orders")) || [];
+    let cart = JSON.parse(localStorage.getItem("emp593_cart")) || [];
+
+    let currentSession = JSON.parse(sessionStorage.getItem("emp593_session")) || null;
+    let selectedCategory = "Todos";
+    let deliveryMode = "domicilio";
+    let currentGpsLink = "";
+    let isAdminView = false;
+    let currentFormExtras = [...DEFAULT_MASTER_EXTRAS];
+
+    window.addEventListener("DOMContentLoaded", () => {
+      applySettingsToUI();
+      renderCategories();
+      renderMasterExtrasDropdown();
+      renderProducts();
+      renderFormExtrasBadges();
+      updateCartUI();
+      if (currentSession) {
+        checkSessionUIAccess();
+      }
+    });
+
+    function applySettingsToUI() {
+      document.getElementById("headerBrandName").textContent = settings.storeName;
+      document.getElementById("heroFreeThreshold").textContent = Number(settings.freeThreshold).toFixed(2);
+      document.getElementById("cfgStoreName").value = settings.storeName || "";
+      document.getElementById("cfgWhatsapp").value = settings.whatsapp || "";
+      document.getElementById("cfgDeliveryFee").value = settings.deliveryFee ?? 2;
+      document.getElementById("cfgFreeThreshold").value = settings.freeThreshold ?? 12;
+      document.getElementById("cfgFirebaseUrl").value = settings.firebaseUrl || "";
+
+      document.getElementById("cfgBankName").value = settings.bankName || "";
+      document.getElementById("cfgAccountType").value = settings.accountType || "Cuenta de Ahorros";
+      document.getElementById("cfgAccountNumber").value = settings.accountNumber || "";
+      document.getElementById("cfgAccountHolder").value = settings.accountHolder || "";
+      document.getElementById("cfgAccountId").value = settings.accountId || "";
+      document.getElementById("cfgAccountEmail").value = settings.accountEmail || "";
+      document.getElementById("cfgDeunaNote").value = settings.deunaNote || "";
+
+      document.getElementById("viewBankName").textContent = settings.bankName || "";
+      document.getElementById("viewAccountNumber").textContent = settings.accountNumber || "";
+      document.getElementById("viewAccountHolder").textContent = settings.accountHolder || "";
+      document.getElementById("viewAccountId").textContent = settings.accountId || "";
+      document.getElementById("viewDeunaNote").textContent = settings.deunaNote || "";
+    }
+
+    // GESTIÓN DE SESIÓN Y LOGIN
+    function handleAdminNavClick() {
+      if (!currentSession) {
+        openLoginModal();
+      } else {
+        toggleView();
+      }
+    }
+
+    function openLoginModal() {
+      document.getElementById("loginUsername").value = "";
+      document.getElementById("loginPassword").value = "";
+      document.getElementById("loginErrorMsg").classList.add("hidden");
+      const modal = document.getElementById("loginModal");
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+    }
+
+    function closeLoginModal() {
+      const modal = document.getElementById("loginModal");
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    }
+
+    function handleLoginSubmit(e) {
+      e.preventDefault();
+      const u = document.getElementById("loginUsername").value.trim();
+      const p = document.getElementById("loginPassword").value.trim();
+
+      const found = users.find(usr => usr.username.toLowerCase() === u.toLowerCase() && usr.pass === p);
+      if (!found) {
+        const err = document.getElementById("loginErrorMsg");
+        err.textContent = "Usuario o contraseña incorrectos.";
+        err.classList.remove("hidden");
+        return;
+      }
+
+      currentSession = found;
+      sessionStorage.setItem("emp593_session", JSON.stringify(currentSession));
+      closeLoginModal();
+      checkSessionUIAccess();
+      toggleView();
+    }
+
+    function handleLogout() {
+      currentSession = null;
+      sessionStorage.removeItem("emp593_session");
+      if (isAdminView) toggleView();
+      document.getElementById("adminNavIcon").className = "fa-solid fa-lock";
+    }
+
+    function checkSessionUIAccess() {
+      if (!currentSession) return;
+      document.getElementById("adminNavIcon").className = "fa-solid fa-unlock";
+      document.getElementById("currentUserBadge").textContent = `Sesión: ${currentSession.username} (${currentSession.role})`;
+
+      // Control de pestañas según rol
+      const isMasterOrAdmin = currentSession.isMaster || currentSession.role === "Administrador";
+      const isCocinero = currentSession.role === "Cocinero";
+
+      document.getElementById("tabBtnMenu").style.display = isCocinero ? "none" : "block";
+      document.getElementById("tabBtnUsers").style.display = isMasterOrAdmin ? "block" : "none";
+      document.getElementById("tabBtnSettings").style.display = isMasterOrAdmin ? "block" : "none";
+
+      if (isCocinero) {
+        switchAdminTab("orders");
+      }
+
+      // Restricción de gestión de usuarios solo al Máster
+      const guard = document.getElementById("masterOnlyGuard");
+      const content = document.getElementById("masterUsersContent");
+      if (currentSession.isMaster) {
+        guard.classList.add("hidden");
+        content.classList.remove("hidden");
+        renderUsersList();
+      } else {
+        guard.classList.remove("hidden");
+        content.classList.add("hidden");
+      }
+    }
+
+    // GESTIÓN DE USUARIOS Y JERARQUÍAS (MÁSTER)
+    function renderUsersList() {
+      const container = document.getElementById("usersListTable");
+      if (!container) return;
+      container.innerHTML = users.map((usr, idx) => `
+        <div class="p-3.5 flex items-center justify-between text-xs">
+          <div>
+            <p class="font-bold text-slate-800 text-sm">
+              ${usr.username} ${usr.isMaster ? '<span class="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded-full font-extrabold ml-1">MÁSTER</span>' : ''}
+            </p>
+            <p class="text-slate-500">Rol / Jerarquía: <strong class="text-orange-600">${usr.role}</strong> • Clave: <span class="font-mono">${usr.pass}</span></p>
+          </div>
+          ${!usr.isMaster ? `
+            <div class="flex gap-1.5">
+              <button onclick="editUser('${usr.username}')" class="bg-blue-50 text-blue-600 px-2.5 py-1.5 rounded-lg font-bold"><i class="fa-solid fa-pen"></i></button>
+              <button onclick="deleteUser(${idx})" class="bg-red-50 text-red-600 px-2.5 py-1.5 rounded-lg font-bold"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          ` : '<span class="text-[11px] text-slate-400 italic">Cuenta Protegida</span>'}
+        </div>
+      `).join("");
+    }
+
+    function handleSaveUser(e) {
+      e.preventDefault();
+      if (!currentSession || !currentSession.isMaster) {
+        alert("Solo el usuario Máster puede gestionar cuentas.");
+        return;
+      }
+      const username = document.getElementById("newUsrName").value.trim();
+      const pass = document.getElementById("newUsrPass").value.trim();
+      const role = document.getElementById("newUsrRole").value;
+      const orig = document.getElementById("editingUsernameOriginal").value.trim();
+
+      if (orig) {
+        const uObj = users.find(u => u.username === orig);
+        if (uObj) {
+          uObj.username = username;
+          uObj.pass = pass;
+          uObj.role = role;
+        }
+      } else {
+        if (users.some(u => u.username.toLowerCase() === username.toLowerCase())) {
+          alert("Ese nombre de usuario ya existe.");
+          return;
+        }
+        users.push({ username, pass, role, isMaster: false });
+      }
+
+      localStorage.setItem("emp593_users", JSON.stringify(users));
+      document.getElementById("editingUsernameOriginal").value = "";
+      e.target.reset();
+      document.getElementById("btnSaveUserSubmit").innerHTML = `<i class="fa-solid fa-check mr-1"></i> Guardar Usuario en el Sistema`;
+      renderUsersList();
+      alert("Usuario guardado con éxito.");
+    }
+
+    function editUser(username) {
+      const u = users.find(usr => usr.username === username);
+      if (!u) return;
+      document.getElementById("editingUsernameOriginal").value = u.username;
+      document.getElementById("newUsrName").value = u.username;
+      document.getElementById("newUsrPass").value = u.pass;
+      document.getElementById("newUsrRole").value = u.role;
+      document.getElementById("btnSaveUserSubmit").innerHTML = `<i class="fa-solid fa-check mr-1"></i> Actualizar Usuario`;
+    }
+
+    function deleteUser(idx) {
+      if (users[idx].isMaster) {
+        alert("No se puede eliminar la cuenta Máster.");
+        return;
+      }
+      if (!confirm(`¿Eliminar al usuario ${users[idx].username}?`)) return;
+      users.splice(idx, 1);
+      localStorage.setItem("emp593_users", JSON.stringify(users));
+      renderUsersList();
+    }
+
+    // TIENDA Y CATEGORÍAS
+    function renderCategories() {
+      const allCats = ["Todos", ...categories];
+      const container = document.getElementById("categoryContainer");
+      container.innerHTML = allCats.map(cat => `
+        <button onclick="selectCategory('${cat.replace(/'/g, "\\'")}')" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition ${selectedCategory === cat ? 'bg-orange-600 text-white shadow-md' : 'bg-white text-slate-700 hover:bg-orange-50 border border-slate-200'}">${cat}</button>
+      `).join("");
+      const selectEl = document.getElementById("newProdCategory");
+      if (selectEl) selectEl.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join("");
+      const badgesContainer = document.getElementById("adminCategoriesBadges");
+      if (badgesContainer) {
+        badgesContainer.innerHTML = categories.map((cat, idx) => `
+          <div class="inline-flex items-center gap-2 bg-white border border-amber-300 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-800 shadow-2xs">
+            <span>${cat}</span>
+            <button type="button" onclick="deleteCategory(${idx})" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        `).join("");
+      }
+    }
+
+    function handleAddCategory(e) {
+      e.preventDefault();
+      const input = document.getElementById("newCategoryName");
+      const name = input.value.trim();
+      if (!name) return;
+      categories.push(name);
+      localStorage.setItem("emp593_categories", JSON.stringify(categories));
+      input.value = "";
+      renderCategories();
+    }
+
+    function deleteCategory(idx) {
+      categories.splice(idx, 1);
+      localStorage.setItem("emp593_categories", JSON.stringify(categories));
+      renderCategories();
+    }
+
+    function selectCategory(cat) {
+      selectedCategory = cat;
+      renderCategories();
+      renderProducts();
+    }
+
+    function renderProducts() {
+      const query = document.getElementById("searchInput").value.toLowerCase().trim();
+      const filtered = products.filter(p => (selectedCategory === "Todos" || p.category === selectedCategory) && (p.name.toLowerCase().includes(query) || p.desc.toLowerCase().includes(query)));
+      const grid = document.getElementById("productsGrid");
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="col-span-full bg-white p-8 rounded-2xl text-center text-slate-500 border">No se encontraron platos.</div>`;
+        return;
+      }
+      grid.innerHTML = filtered.map(item => `
+        <div class="bg-white rounded-2xl shadow-sm hover:shadow-xl border border-slate-200 overflow-hidden flex flex-col transition">
+          <div class="h-44 bg-slate-100 relative">
+            <img src="${item.image}" alt="${item.name}" onerror="this.src='https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=600&q=80'" class="w-full h-full object-cover" />
+            <span class="absolute top-3 left-3 bg-slate-900/80 text-amber-300 text-[11px] font-bold px-2.5 py-1 rounded-lg">${item.category}</span>
+            <span class="absolute bottom-3 right-3 bg-white text-slate-900 font-extrabold text-sm px-3 py-1 rounded-xl shadow-md">$${Number(item.price).toFixed(2)}</span>
+          </div>
+          <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
+            <div>
+              <h3 class="font-bold text-base text-slate-900">${item.name}</h3>
+              <p class="text-xs text-slate-500 mt-1 line-clamp-2">${item.desc}</p>
+            </div>
+            <div class="space-y-2.5 pt-2 border-t">
+              ${(item.extras || []).length > 0 ? `
+                <div class="bg-amber-50/60 border border-amber-200 rounded-xl p-2.5 max-h-32 overflow-y-auto custom-scroll space-y-1">
+                  ${item.extras.map(ex => `
+                    <label class="flex items-center justify-between gap-2 text-xs bg-white px-2 py-1.5 rounded-lg border cursor-pointer">
+                      <span class="flex items-center gap-2 font-medium text-slate-700">
+                        <input type="checkbox" class="extra-check-${item.id} accent-orange-600 w-3.5 h-3.5" data-name="${ex.name}" data-price="${Number(ex.price || 0)}" onchange="updateLiveProductButton('${item.id}', ${Number(item.price)})" />
+                        <span>${ex.name}</span>
+                      </span>
+                      <span class="font-bold text-[11px] ${Number(ex.price) > 0 ? 'text-orange-600' : 'text-emerald-600'}">${Number(ex.price) > 0 ? `+$${Number(ex.price).toFixed(2)}` : 'Gratis'}</span>
+                    </label>
+                  `).join("")}
+                </div>
+              ` : ""}
+              <button id="btn-add-${item.id}" onclick="addToCart('${item.id}')" class="w-full py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs rounded-xl shadow flex items-center justify-center gap-2">
+                <i class="fa-solid fa-cart-plus"></i> <span>Agregar al Carrito • $${Number(item.price).toFixed(2)}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function updateLiveProductButton(productId, basePrice) {
+      const checks = document.querySelectorAll(`.extra-check-${productId}:checked`);
+      let sum = 0;
+      checks.forEach(ch => sum += parseFloat(ch.getAttribute("data-price")) || 0);
+      const btn = document.getElementById(`btn-add-${productId}`);
+      if (btn) btn.innerHTML = `<i class="fa-solid fa-cart-plus"></i> <span>Agregar al Carrito • $${(basePrice + sum).toFixed(2)}</span>`;
+    }
+
+    function addToCart(productId) {
+      const product = products.find(p => p.id === productId);
+      if (!product) return;
+      const checks = document.querySelectorAll(`.extra-check-${productId}:checked`);
+      const chosenExtras = [];
+      let extrasTotal = 0;
+      checks.forEach(ch => {
+        chosenExtras.push({ name: ch.getAttribute("data-name"), price: parseFloat(ch.getAttribute("data-price")) || 0 });
+        extrasTotal += parseFloat(ch.getAttribute("data-price")) || 0;
+        ch.checked = false;
+      });
+      updateLiveProductButton(productId, Number(product.price));
+      const unitPrice = Number(product.price) + extrasTotal;
+      const extrasKey = chosenExtras.map(e => `${e.name}:${e.price}`).sort().join("|") || "sin-extras";
+      const cartKey = `${product.id}__${extrasKey}`;
+      const existing = cart.find(item => item.cartKey === cartKey);
+      if (existing) existing.qty += 1;
+      else cart.push({ cartKey, id: product.id, name: product.name, extras: chosenExtras, price: unitPrice, qty: 1 });
+      localStorage.setItem("emp593_cart", JSON.stringify(cart));
+      updateCartUI();
+    }
+
+    function changeQty(cartKey, delta) {
+      const idx = cart.findIndex(i => i.cartKey === cartKey);
+      if (idx === -1) return;
+      cart[idx].qty += delta;
+      if (cart[idx].qty <= 0) cart.splice(idx, 1);
+      localStorage.setItem("emp593_cart", JSON.stringify(cart));
+      updateCartUI();
+    }
+
+    function getTotals() {
+      const subtotal = cart.reduce((acc, item) => acc + Number(item.price) * item.qty, 0);
+      const count = cart.reduce((acc, item) => acc + item.qty, 0);
+      let delivery = (subtotal > 0 && deliveryMode === "domicilio") ? (subtotal >= Number(settings.freeThreshold) ? 0 : Number(settings.deliveryFee)) : 0;
+      return { subtotal, delivery, total: subtotal + delivery, count };
+    }
+
+    function formatItemExtrasText(item) {
+      if (Array.isArray(item.extras) && item.extras.length > 0) return item.extras.map(e => Number(e.price) > 0 ? `${e.name} (+$${Number(e.price).toFixed(2)})` : e.name).join(", ");
+      return "Sin extras";
+    }
+
+    function updateCartUI() {
+      const { subtotal, delivery, total, count } = getTotals();
+      document.getElementById("cartBadge").textContent = count;
+      document.getElementById("cartHeaderTotal").textContent = `$${total.toFixed(2)}`;
+      document.getElementById("summarySubtotal").textContent = `$${subtotal.toFixed(2)}`;
+      document.getElementById("summaryDelivery").textContent = delivery === 0 && subtotal > 0 ? "GRATIS" : `$${delivery.toFixed(2)}`;
+      document.getElementById("summaryTotal").textContent = `$${total.toFixed(2)}`;
+      const threshold = Number(settings.freeThreshold) || 12;
+      const pct = Math.min(100, Math.round((subtotal / threshold) * 100));
+      document.getElementById("freeDeliveryBar").style.width = `${pct}%`;
+      document.getElementById("freeDeliveryPercent").textContent = `${pct}%`;
+      document.getElementById("freeDeliveryText").textContent = subtotal >= threshold ? "¡Envío GRATIS a domicilio!" : `Te faltan $${(threshold - subtotal).toFixed(2)} para Envío Gratis`;
+
+      const container = document.getElementById("cartItemsContainer");
+      if (cart.length === 0) {
+        container.innerHTML = `<div class="text-center py-8 bg-slate-50 rounded-2xl border border-dashed text-slate-500 text-xs">Tu carrito está vacío.</div>`;
+        return;
+      }
+      container.innerHTML = cart.map(item => `
+        <div class="flex items-center justify-between gap-2 bg-slate-50 p-3 rounded-xl border">
+          <div class="flex-1">
+            <p class="font-bold text-xs text-slate-800">${item.name}</p>
+            <p class="text-[11px] text-orange-600 font-semibold">${formatItemExtrasText(item)}</p>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button onclick="changeQty('${item.cartKey}', -1)" class="w-6 h-6 rounded bg-white border font-bold text-xs">-</button>
+            <span class="text-xs font-extrabold w-4 text-center">${item.qty}</span>
+            <button onclick="changeQty('${item.cartKey}', 1)" class="w-6 h-6 rounded bg-orange-600 text-white font-bold text-xs">+</button>
+          </div>
+          <div class="text-right font-extrabold text-xs text-slate-900 w-12">$${(Number(item.price) * item.qty).toFixed(2)}</div>
+        </div>
+      `).join("");
+    }
+
+    function toggleCart(open) {
+      document.getElementById("cartOverlay").classList.toggle("hidden", !open);
+      document.getElementById("cartDrawer").classList.toggle("translate-x-full", !open);
+    }
+
+    function setDeliveryMode(mode) {
+      deliveryMode = mode;
+      document.getElementById("btnModeDomicilio").className = mode === "domicilio" ? "py-2 rounded-lg text-xs font-bold bg-white text-slate-900 shadow-xs" : "py-2 rounded-lg text-xs font-bold text-slate-600";
+      document.getElementById("btnModeRetiro").className = mode === "retiro" ? "py-2 rounded-lg text-xs font-bold bg-white text-slate-900 shadow-xs" : "py-2 rounded-lg text-xs font-bold text-slate-600";
+      document.getElementById("addressFields").classList.toggle("hidden", mode === "retiro");
+      updateCartUI();
+    }
+
+    function togglePaymentMethodUI() {
+      const method = document.getElementById("custPayment").value;
+      document.getElementById("cashChangeBox").classList.toggle("hidden", method !== "Efectivo");
+      document.getElementById("bankTransferBox").classList.toggle("hidden", method === "Efectivo");
+    }
+
+    function copyAllBankDetails() {
+      navigator.clipboard.writeText(`Banco: ${settings.bankName}\nCuenta: ${settings.accountNumber}\nTitular: ${settings.accountHolder}\nCédula/RUC: ${settings.accountId}`);
+      const t = document.getElementById("copyToast");
+      t.classList.remove("hidden");
+      setTimeout(() => t.classList.add("hidden"), 2000);
+    }
+
+    function captureGPS() {
+      if (!navigator.geolocation) return alert("GPS no soportado");
+      navigator.geolocation.getCurrentPosition(pos => {
+        currentGpsLink = `https://www.google.com/maps?q=${pos.coords.latitude.toFixed(6)},${pos.coords.longitude.toFixed(6)}`;
+        const st = document.getElementById("gpsStatus");
+        st.textContent = "GPS Adjuntado";
+        st.classList.remove("hidden");
+      });
+    }
+
+    async function submitOrder() {
+      if (cart.length === 0) return alert("Carrito vacío");
+      const name = document.getElementById("custName").value.trim();
+      const phone = document.getElementById("custPhone").value.trim();
+      if (!name || !phone) return alert("Ingresa nombre y teléfono");
+      const { subtotal, delivery, total } = getTotals();
+      const newOrder = {
+        orderId: "PED-" + Math.floor(100000 + Math.random() * 900000),
+        createdAt: new Date().toLocaleString("es-EC"),
+        customer: { name, phone, address: deliveryMode === "domicilio" ? document.getElementById("custAddress").value : "Retiro", gps: currentGpsLink },
+        payment: document.getElementById("custPayment").value,
+        items: [...cart],
+        total,
+        status: "Pendiente"
+      };
+      orders.unshift(newOrder);
+      localStorage.setItem("emp593_orders", JSON.stringify(orders));
+      const text = `*NUEVO PEDIDO*\nCliente: ${name}\nTotal: $${total.toFixed(2)}`;
+      cart = [];
+      localStorage.setItem("emp593_cart", JSON.stringify(cart));
+      updateCartUI();
+      toggleCart(false);
+      window.open(`https://wa.me/${settings.whatsapp}?text=${encodeURIComponent(text)}`, "_blank");
+    }
+
+    // PANEL ADMIN Y NAVEGACIÓN
+    function toggleView() {
+      isAdminView = !isAdminView;
+      document.getElementById("storeView").classList.toggle("hidden", isAdminView);
+      document.getElementById("adminView").classList.toggle("hidden", !isAdminView);
+      if (isAdminView) {
+        renderAdminOrders();
+        renderCategories();
+        renderMasterExtrasDropdown();
+        renderAdminMenu();
+        if (currentSession) checkSessionUIAccess();
+      }
+    }
+
+    function switchAdminTab(tab) {
+      ["orders", "menu", "users", "settings"].forEach(t => {
+        document.getElementById(`adminTab${t.charAt(0).toUpperCase() + t.slice(1)}`).classList.toggle("hidden", t !== tab);
+        document.getElementById(`tabBtn${t.charAt(0).toUpperCase() + t.slice(1)}`).className = t === tab ? "px-3.5 py-2 rounded-xl text-xs font-bold bg-orange-600 text-white" : "px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200";
+      });
+    }
+
+    function renderAdminOrders() {
+      document.getElementById("adminOrdersCount").textContent = orders.length;
+      document.getElementById("statTotalOrders").textContent = orders.length;
+      document.getElementById("statPendingOrders").textContent = orders.filter(o => o.status === "Pendiente").length;
+      document.getElementById("statShippingOrders").textContent = orders.filter(o => o.status === "En camino").length;
+      document.getElementById("statTotalRevenue").textContent = `$${orders.reduce((acc, o) => acc + (o.status !== "Cancelado" ? Number(o.total) : 0), 0).toFixed(2)}`;
+
+      const list = document.getElementById("ordersListContainer");
+      if (orders.length === 0) {
+        list.innerHTML = `<div class="p-8 text-center text-slate-400 text-xs border rounded-xl">No hay pedidos.</div>`;
+        return;
+      }
+      list.innerHTML = orders.map((o, idx) => `
+        <div class="p-4 rounded-xl border bg-slate-50 flex flex-col md:flex-row justify-between gap-3 text-xs">
+          <div>
+            <p class="font-extrabold text-sm">${o.orderId} — <span class="text-orange-600">$${Number(o.total).toFixed(2)}</span> (${o.status})</p>
+            <p class="font-semibold">${o.customer.name} • ${o.customer.phone}</p>
+          </div>
+          <select onchange="updateOrderStatus(${idx}, this.value)" class="border rounded px-2 py-1 font-semibold">
+            ${["Pendiente", "En preparación", "En camino", "Entregado", "Cancelado"].map(s => `<option value="${s}" ${o.status === s ? "selected" : ""}>${s}</option>`).join("")}
+          </select>
+        </div>
+      `).join("");
+    }
+
+    function updateOrderStatus(idx, status) {
+      orders[idx].status = status;
+      localStorage.setItem("emp593_orders", JSON.stringify(orders));
+      renderAdminOrders();
+    }
+
+    function renderMasterExtrasDropdown() {
+      const sel = document.getElementById("masterExtrasDropdown");
+      if (sel) sel.innerHTML = masterExtras.map((e, i) => `<option value="${i}">${e.name} (+$${Number(e.price).toFixed(2)})</option>`).join("");
+    }
+
+    function addSelectedDropdownExtraToProduct() {
+      const idx = document.getElementById("masterExtrasDropdown").value;
+      if (masterExtras[idx]) addExtraToForm(masterExtras[idx].name, masterExtras[idx].price);
+    }
+
+    function addExtraToForm(name, price) {
+      if (!currentFormExtras.some(e => e.name.toLowerCase() === name.toLowerCase())) {
+        currentFormExtras.push({ name, price: Number(price) || 0 });
+        renderFormExtrasBadges();
+      }
+    }
+
+    function renderFormExtrasBadges() {
+      const c = document.getElementById("productFormExtrasList");
+      if (c) c.innerHTML = currentFormExtras.map((e, i) => `<div class="inline-flex items-center gap-2 bg-amber-50 border px-3 py-1 rounded-xl text-xs font-semibold"><span>${e.name} (+$${Number(e.price).toFixed(2)})</span><button type="button" onclick="currentFormExtras.splice(${i},1);renderFormExtrasBadges()" class="text-red-500 font-bold">×</button></div>`).join("");
+    }
+
+    function handleSaveProduct(e) {
+      e.preventDefault();
+      const editId = document.getElementById("editProdId").value;
+      const p = {
+        id: editId || ("prod-" + Date.now()),
+        name: document.getElementById("newProdName").value.trim(),
+        category: document.getElementById("newProdCategory").value,
+        price: parseFloat(document.getElementById("newProdPrice").value) || 0,
+        image: document.getElementById("newProdImage").value.trim() || "https://images.unsplash.com/photo-1604908554025-aaa87c152c7b?auto=format&fit=crop&w=600&q=80",
+        desc: document.getElementById("newProdDesc").value.trim(),
+        extras: [...currentFormExtras]
+      };
+      if (editId) {
+        const i = products.findIndex(item => item.id === editId);
+        if (i !== -1) products[i] = p;
+      } else {
+        products.push(p);
+      }
+      localStorage.setItem("emp593_products", JSON.stringify(products));
+      resetProductForm();
+      renderProducts();
+      renderAdminMenu();
+    }
+
+    function renderAdminMenu() {
+      document.getElementById("adminMenuTable").innerHTML = products.map(p => `
+        <div class="p-3 bg-white flex justify-between items-center text-xs">
+          <div><p class="font-bold">${p.name}</p><p class="text-slate-500">$${Number(p.price).toFixed(2)}</p></div>
+          <button onclick="deleteProduct('${p.id}')" class="text-red-600 font-bold px-2 py-1"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      `).join("");
+    }
+
+    function deleteProduct(id) {
+      products = products.filter(p => p.id !== id);
+      localStorage.setItem("emp593_products", JSON.stringify(products));
+      renderProducts();
+      renderAdminMenu();
+    }
+
+    function resetProductForm() {
+      document.getElementById("editProdId").value = "";
+      document.getElementById("newProdName").value = "";
+      document.getElementById("newProdPrice").value = "";
+      document.getElementById("newProdImage").value = "";
+      document.getElementById("newProdDesc").value = "";
+      currentFormExtras = [...DEFAULT_MASTER_EXTRAS];
+      renderFormExtrasBadges();
+    }
+
+    function saveStoreSettings() {
+      settings = {
+        storeName: document.getElementById("cfgStoreName").value.trim(),
+        whatsapp: document.getElementById("cfgWhatsapp").value.trim(),
+        deliveryFee: parseFloat(document.getElementById("cfgDeliveryFee").value) || 0,
+        freeThreshold: parseFloat(document.getElementById("cfgFreeThreshold").value) || 12,
+        bankName: document.getElementById("cfgBankName").value.trim(),
+        accountType: document.getElementById("cfgAccountType").value,
+        accountNumber: document.getElementById("cfgAccountNumber").value.trim(),
+        accountHolder: document.getElementById("cfgAccountHolder").value.trim(),
+        accountId: document.getElementById("cfgAccountId").value.trim(),
+        accountEmail: document.getElementById("cfgAccountEmail").value.trim(),
+        deunaNote: document.getElementById("cfgDeunaNote").value.trim(),
+        firebaseUrl: document.getElementById("cfgFirebaseUrl").value.trim()
+      };
+      localStorage.setItem("emp593_settings", JSON.stringify(settings));
+      applySettingsToUI();
+      alert("Ajustes guardados.");
+    }
+  </script>
+</body>
+</html>
